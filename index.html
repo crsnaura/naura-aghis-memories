@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Naura & Aghis</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- HEADER / NAVBAR -->
+<div class="flex justify-between items-center px-8 py-6 bg-white shadow">
+    <h1 class="text-2xl font-bold tracking-widest text-pink-600">
+      NAURA & AGHIS
+    </h1>
+    <div class="space-x-4 text-lg">
+      <span>❤️</span>
+      <span>Memories</span>
+    </div>
+  </div>
+  
+
+<!-- HERO -->
+<div class="py-24 text-center bg-pink-50">
+    <h2 class="text-5xl font-extrabold mb-3">
+      Naura & Aghis
+    </h2>
+    <p class="text-xl text-gray-600 italic">
+      Perjalanan Kita
+    </p>
+  </div>
+
+<!-- FORM TAMBAH KENANGAN -->
+<div class="max-w-3xl mx-auto p-8 bg-white rounded-xl shadow mb-12">
+  <h3 class="text-2xl font-bold mb-6 text-center text-pink-600">
+    Tambah Kenangan Baru 💌
+  </h3>
+
+  <div class="space-y-4">
+    <input id="titleInput"
+           type="text"
+           placeholder="Judul momen"
+           class="w-full border rounded p-3">
+
+    <input id="dateInput"
+           type="date"
+           class="w-full border rounded p-3">
+
+    <textarea id="storyInput"
+              placeholder="Cerita singkat"
+              class="w-full border rounded p-3"></textarea>
+
+    <input id="fileInput"
+          type="file"
+          multiple
+          accept="image/*,video/*"
+          class="w-full border rounded p-3">
+       
+    <select id="categoryInput"
+        class="w-full border rounded p-3">
+      <option value="">Pilih kategori</option>
+      <option value="Travel">Travel</option>
+      <option value="Date">Date</option>
+      <option value="Event">Event</option>
+    </select>
+
+    <button type="button" onclick="addMoment()"
+            class="w-full bg-pink-600 text-white py-3 rounded hover:bg-pink-700">
+      Tambah Kenangan
+    </button>
+  </div>
+</div>
+
+<!-- FILTER -->
+<div class="max-w-6xl mx-auto flex gap-4 px-8 mb-6">
+  <button onclick="filterCategory('All')"
+          class="filter-btn bg-black text-white px-4 py-2 rounded">
+    All
+  </button>
+  <button onclick="filterCategory('Travel')"
+          class="filter-btn px-4 py-2 border rounded">
+    Travel
+  </button>
+  <button onclick="filterCategory('Date')"
+          class="filter-btn px-4 py-2 border rounded">
+    Date
+  </button>
+  <button onclick="filterCategory('Event')"
+          class="filter-btn px-4 py-2 border rounded">
+    Event
+  </button>
+</div>
+
+<!-- MOMENTS -->
+<div id="moments"
+     class="max-w-6xl mx-auto p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
+</div>
+  
+
+<!-- FOOTER -->
+<div class="text-center py-8 text-gray-500">
+    Made with ❤️ by Naura
+  </div>
+  
+<!-- MODAL -->
+<div id="modal"
+     onclick="closeModal()"
+     class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center overflow-y-auto">
+
+  <div onclick="event.stopPropagation()"
+       class="bg-white rounded-xl max-w-3xl w-full p-6">
+
+    <h2 id="modalTitle" class="text-2xl font-bold mb-1"></h2>
+    <p id="modalDate" class="text-gray-500 mb-4"></p>
+    <p id="modalStory" class="text-gray-700 mb-6"></p>
+
+    <div id="modalGallery"
+         class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+    </div>
+
+    <button onclick="closeModal()"
+            class="bg-black text-white px-4 py-2 rounded">
+      Tutup
+    </button>
+  </div>
+</div>
+
+
+<script>
+  const { createClient } = supabase;
+
+  const supabaseUrl = "https://xurqnouzjbmomdblqbhy.supabase.co";
+  const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh1cnFub3V6amJtb21kYmxxYmh5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA3ODIyMDIsImV4cCI6MjA4NjM1ODIwMn0.gMQjh7lQHo-MZ-UbMshPJMpMIbzc8agRCT8txmrQsJc";
+
+  const db = createClient(supabaseUrl, supabaseKey);
+
+  const container = document.getElementById("moments");
+
+  let allMoments = [];
+
+  async function loadMoments() {
+    const { data, error } = await db
+      .from("moments")
+      .select("*")
+      .order("created_at", { ascending: false });
+  
+    if (error) {
+      console.error(error);
+      return;
+    }
+  
+    allMoments = data;
+    renderMoments(allMoments);
+  }
+  
+  function renderMoments(data) {
+    container.innerHTML = "";
+
+    data.forEach((moment) => {
+      container.innerHTML += `
+        <div class="bg-white rounded-xl overflow-hidden shadow hover:shadow-xl transition">
+          <img src="${moment.media_urls[0]}"
+                class="w-full h-48 object-cover transition duration-300 hover:scale-105">
+
+  
+          <div class="p-4">
+            <h3 class="font-bold text-lg">${moment.title}</h3>
+            <p class="text-gray-500 text-sm">${moment.date}</p>
+  
+           <div class="mt-4 flex justify-between items-center">
+              <span class="text-pink-500 font-semibold">
+                ${moment.media_urls.length} Media
+              </span>
+              <button onclick="openModal('${moment.id}')"
+                      class="bg-black text-white px-4 py-2 rounded text-sm hover:bg-gray-800">
+                Lihat Kenangan
+              </button>
+              <button onclick="deleteMoment('${moment.id}')"
+                      class="text-red-500 text-sm mt-2">
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+  }
+  loadMoments();
+
+  async function addMoment() {
+    const title = document.getElementById("titleInput").value;
+    const date = document.getElementById("dateInput").value;
+    const story = document.getElementById("storyInput").value;
+    const category = document.getElementById("categoryInput").value;
+    const files = document.getElementById("fileInput").files;
+  
+    if (!title || !date || !story || !category || files.length === 0) {
+      alert("Isi semua field dulu ya 💕");
+      return;
+    }
+  
+    let mediaUrls = [];
+  
+    for (let file of files) {
+      const fileName = `${Date.now()}-${file.name}`;
+  
+      const { data, error } = await db.storage
+        .from("memories")
+        .upload(fileName, file);
+  
+      if (error) {
+        console.error(error);
+        alert("Upload gagal 😢");
+        return;
+      }
+  
+      const { data: publicUrlData } = db.storage
+        .from("memories")
+        .getPublicUrl(fileName);
+  
+      mediaUrls.push(publicUrlData.publicUrl);
+    }
+  
+    const { error: insertError } = await db
+      .from("moments")
+      .insert([
+        {
+          title,
+          date,
+          story,
+          category,
+          media_urls: mediaUrls
+        }
+      ]);
+  
+    if (insertError) {
+      console.error(insertError);
+      alert("Gagal simpan data 😢");
+      return;
+    }
+  
+    loadMoments();
+  
+    // reset form
+    document.getElementById("titleInput").value = "";
+    document.getElementById("dateInput").value = "";
+    document.getElementById("storyInput").value = "";
+    document.getElementById("categoryInput").value = "";
+    document.getElementById("fileInput").value = "";
+  }    
+  
+  function openModal(id) {
+    const moment = allMoments.find(m => m.id === id);
+  
+    if (!moment) return;
+  
+    document.getElementById("modalTitle").innerText = moment.title;
+    document.getElementById("modalDate").innerText = moment.date;
+    document.getElementById("modalStory").innerText = moment.story;
+  
+    const gallery = document.getElementById("modalGallery");
+    gallery.innerHTML = "";
+  
+    moment.media_urls.forEach(url => {
+      if (url.includes(".mp4") || url.includes(".mov") || url.includes(".webm")) {
+        gallery.innerHTML += `
+          <video controls class="w-full rounded-lg">
+            <source src="${url}">
+          </video>
+        `;
+      } else {
+        gallery.innerHTML += `
+          <img src="${url}" class="w-full h-40 object-cover rounded-lg">
+        `;
+      }
+    });
+  
+    document.getElementById("modal").classList.remove("hidden");
+  }
+
+  function closeModal() {
+    document.getElementById("modal").classList.add("hidden");
+  }
+
+  async function deleteMoment(id) {
+    const confirmDelete = confirm("Yakin mau hapus momen ini? 😢");
+  
+    if (!confirmDelete) return;
+  
+    // Ambil data moment dulu (buat tahu media_urls nya)
+    const { data, error } = await db
+      .from("moments")
+      .select("*")
+      .eq("id", id)
+      .single();
+  
+    if (error) {
+      console.error(error);
+      return;
+    }
+  
+    const mediaUrls = data.media_urls;
+  
+    for (let url of mediaUrls) {
+      const fileName = url.split("/object/public/memories/")[1];
+    
+      const { error } = await db.storage
+        .from("memories")
+        .remove([fileName]);
+    
+      if (error) {
+        console.error("Gagal hapus:", error);
+      } else {
+        console.log("Berhasil hapus:", fileName);
+      }
+    }      
+  
+    // 🔥 Hapus data dari table
+    await db
+      .from("moments")
+      .delete()
+      .eq("id", id);
+  
+    loadMoments();
+  }
+  
+  function filterCategory(category) {
+    if (category === "All") {
+      renderMoments(allMoments);
+      return;
+    }
+  
+    const filtered = allMoments.filter(
+      moment => moment.category === category
+    );
+  
+    renderMoments(filtered);
+  }
+  
+</script>
+
+</body>
+</html>
